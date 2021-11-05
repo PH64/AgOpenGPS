@@ -491,6 +491,8 @@ namespace AgOpenGPS
                                 vecFix.easting = double.Parse(words[0], CultureInfo.InvariantCulture);
                                 vecFix.northing = double.Parse(words[1], CultureInfo.InvariantCulture);
                                 vecFix.heading = double.Parse(words[2], CultureInfo.InvariantCulture);
+				if (words.Length == 4) vecFix.now = DateTime.Parse(words[3]); //timestamp KentStuff
+                                else vecFix.now = DateTime.Now; //timestamp KentStuff
                                 section[0].triangleList.Add(vecFix);
                             }
 
@@ -1081,7 +1083,7 @@ namespace AgOpenGPS
                         for (int i = 0; i < count2; i++)
                             writer.WriteLine((Math.Round(triList[i].easting,3)).ToString(CultureInfo.InvariantCulture) +
                                 "," + (Math.Round(triList[i].northing,3)).ToString(CultureInfo.InvariantCulture) +
-                                 "," + (Math.Round(triList[i].heading, 3)).ToString(CultureInfo.InvariantCulture));
+                                    "," + (Math.Round(triList[i].heading, 3)).ToString(CultureInfo.InvariantCulture) + "," + triList[i].now.ToString("yyyy-MM-ddTHH:mm:ss")); //timestamp KentStuff
                     }
                 }
 
@@ -1880,6 +1882,10 @@ namespace AgOpenGPS
                             kml.WriteStartElement("Placemark");
                             kml.WriteElementString("name", "Sections_" + cntr.ToString());
                             cntr++;
+                            kml.WriteStartElement("TimeSpan");  //timestamp KentStuff
+                            kml.WriteElementString("begin", triList[1].now.ToString("yyyy-MM-ddTHH:mm:ss"));  //timestamp KentStuff
+                            kml.WriteElementString("end", triList[triList.Count - 1].now.ToString("yyyy-MM-ddTHH:mm:ss"));  //timestamp KentStuff
+                            kml.WriteEndElement();//TimeSpan  //timestamp KentStuff
 
                             string collor = "F0" + ((byte)(triList[0].heading)).ToString("X2") +
                                 ((byte)(triList[0].northing)).ToString("X2") + ((byte)(triList[0].easting)).ToString("X2");
