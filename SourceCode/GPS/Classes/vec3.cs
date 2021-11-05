@@ -30,12 +30,14 @@ namespace AgOpenGPS
         public double easting;
         public double northing;
         public double heading;
+	public DateTime now; //timestamp KentStuff
 
         public vec3(double easting, double northing, double heading)
         {
             this.easting = easting;
             this.northing = northing;
             this.heading = heading;
+            this.now = DateTime.Now; //timestamp KentStuff
         }
 
         public vec3(vec3 v)
@@ -43,6 +45,7 @@ namespace AgOpenGPS
             easting = v.easting;
             northing = v.northing;
             heading = v.heading;
+            now = v.now; //timestamp KentStuff
         }
 
         public double HeadingXZ()
