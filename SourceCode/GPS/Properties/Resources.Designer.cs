@@ -1692,6 +1692,16 @@ namespace AgOpenGPS.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap HelpCancel {
+            get {
+                object obj = ResourceManager.GetObject("HelpCancel", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap HideContour {
             get {
                 object obj = ResourceManager.GetObject("HideContour", resourceCulture);
@@ -1993,6 +2003,16 @@ namespace AgOpenGPS.Properties {
         internal static System.Drawing.Bitmap OK64 {
             get {
                 object obj = ResourceManager.GetObject("OK64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap OpManual {
+            get {
+                object obj = ResourceManager.GetObject("OpManual", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -2731,6 +2751,16 @@ namespace AgOpenGPS.Properties {
         internal static System.Drawing.Bitmap vehiclePageTractor {
             get {
                 object obj = ResourceManager.GetObject("vehiclePageTractor", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap VideoLink {
+            get {
+                object obj = ResourceManager.GetObject("VideoLink", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

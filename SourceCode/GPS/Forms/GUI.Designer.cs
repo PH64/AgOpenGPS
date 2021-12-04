@@ -470,7 +470,7 @@ namespace AgOpenGPS
             {
                 Color test;
                 customColorsList[i] = int.Parse(words[i], CultureInfo.InvariantCulture);
-                test = Color.FromArgb(customColorsList[0]).CheckColorFor255();
+                test = Color.FromArgb(customColorsList[i]).CheckColorFor255();
                 int iCol = (test.A << 24) | (test.R << 16) | (test.G << 8) | test.B;
                 customColorsList[i] = iCol;
             }
@@ -978,16 +978,31 @@ namespace AgOpenGPS
 
                 if (point.Y < 90 && point.Y > 30 && (ABLine.isBtnABLineOn || curve.isBtnCurveOn))
                 {
+
                     int middle = oglMain.Width / 2 + oglMain.Width / 5;
                     if (point.X > middle - 80 && point.X < middle + 80)
                     {
+                        if (isTT)
+                        {
+                            MessageBox.Show(gStr.h_lblSwapDirectionCancel, gStr.gsHelp);
+                            ResetHelpBtn();
+                            return;
+                        }
                         SwapDirection();
                         return;
                     }
 
+                    //manual uturn triggering
                     middle = oglMain.Width / 2 - oglMain.Width / 4;
                     if (point.X > middle - 140 && point.X < middle && isUTurnOn)
                     {
+                        if (isTT)
+                        {
+                            MessageBox.Show(gStr.h_lblManualTurnCancelTouch, gStr.gsHelp);
+                            ResetHelpBtn();
+                            return;
+                        }
+
                         if (yt.isYouTurnTriggered)
                         {
                             yt.ResetYouTurn();
@@ -1002,6 +1017,13 @@ namespace AgOpenGPS
 
                     if (point.X > middle && point.X < middle + 140 && isUTurnOn)
                     {
+                        if (isTT)
+                        {
+                            MessageBox.Show(gStr.h_lblManualTurnCancelTouch, gStr.gsHelp);
+                            ResetHelpBtn();
+                            return;
+                        }
+
                         if (yt.isYouTurnTriggered)
                         {
                             yt.ResetYouTurn();
@@ -1020,12 +1042,26 @@ namespace AgOpenGPS
                     int middle = oglMain.Width / 2 - oglMain.Width / 4;
                     if (point.X > middle - 140 && point.X < middle && isLateralOn)
                     {
+                        if (isTT)
+                        {
+                            MessageBox.Show(gStr.h_lblLateralTurnTouch, gStr.gsHelp);
+                            ResetHelpBtn();
+                            return;
+                        }
+
                         yt.BuildManualYouLateral(false);
                         return;
                     }
 
                     if (point.X > middle && point.X < middle + 140 && isLateralOn)
                     {
+                        if (isTT)
+                        {
+                            MessageBox.Show(gStr.h_lblLateralTurnTouch, gStr.gsHelp);
+                            ResetHelpBtn();
+                            return;
+                        }
+
                         yt.BuildManualYouLateral(true);
                         return;
                     }
@@ -1037,6 +1073,14 @@ namespace AgOpenGPS
 
                 if (point.X > centerLeft - 40 && point.X < centerLeft + 40 && point.Y > centerUp - 60 && point.Y < centerUp + 60)
                 {
+                    if (isTT)
+                    {
+                        MessageBox.Show(gStr.h_lblVehicleDirectionResetTouch, gStr.gsHelp);        
+                        ResetHelpBtn();
+                        return;
+                    }
+
+
                     Array.Clear(stepFixPts, 0, stepFixPts.Length);
                     isFirstHeadingSet = false;
                     isReverse = false;
@@ -1078,10 +1122,24 @@ namespace AgOpenGPS
                     }
                 }
 
+                //check for help touch on steer circle
+                if (isTT)
+                {
+                    int sizer = oglMain.Height / 9;
+                    if(point.Y > oglMain.Height-sizer && point.X > oglMain.Width - sizer)
+                    {
+                        MessageBox.Show(gStr.h_lblSteerCircleTouch, gStr.gsHelp);
+                        ResetHelpBtn();
+                        return;
+                    }
+                }
+
                 mouseX = point.X;
                 mouseY = oglMain.Height - point.Y;
                 leftMouseDownOnOpenGL = true;
             }
+
+            ResetHelpBtn();
         }
         private void oglZoom_MouseClick(object sender, MouseEventArgs e)
         {
