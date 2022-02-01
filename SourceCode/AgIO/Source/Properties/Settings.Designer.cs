@@ -12,7 +12,7 @@ namespace AgIO.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.10.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.0.3.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -559,6 +559,54 @@ namespace AgIO.Properties {
             }
             set {
                 this["setUDP_isSendNMEAToUDP"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("GGA")]
+        public string setGPS_lastSentence {
+            get {
+                return ((string)(this["setGPS_lastSentence"]));
+            }
+            set {
+                this["setGPS_lastSentence"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("RTCM")]
+        public string setPort_portNameRtcm {
+            get {
+                return ((string)(this["setPort_portNameRtcm"]));
+            }
+            set {
+                this["setPort_portNameRtcm"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("9600")]
+        public int setPort_baudRateRtcm {
+            get {
+                return ((int)(this["setPort_baudRateRtcm"]));
+            }
+            set {
+                this["setPort_baudRateRtcm"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool setPort_wasRtcmConnected {
+            get {
+                return ((bool)(this["setPort_wasRtcmConnected"]));
+            }
+            set {
+                this["setPort_wasRtcmConnected"] = value;
             }
         }
     }

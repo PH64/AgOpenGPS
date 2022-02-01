@@ -111,6 +111,35 @@ namespace AgOpenGPS
                                 if (age != ushort.MaxValue)
                                     pn.age = age * 0.01;
 
+                                ushort imuHead = BitConverter.ToUInt16(data, 48);
+                                if (imuHead != ushort.MaxValue)
+                                {
+                                    ahrs.imuHeading = imuHead;
+                                    ahrs.imuHeading *= 0.1;
+                                }
+
+                                short imuRol = BitConverter.ToInt16(data, 50);
+                                if (imuRol != short.MaxValue)
+                                {
+                                    rollK = imuRol;
+                                    if (ahrs.isRollInvert) rollK *= -0.1;
+                                    else rollK *= 0.1;
+                                    rollK -= ahrs.rollZero;
+                                    ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
+                                }
+
+                                short imuPich = BitConverter.ToInt16(data, 52);
+                                if (imuPich != short.MaxValue)
+                                {
+                                    ahrs.imuPitch = imuPich;
+                                }
+
+                                short imuYaw = BitConverter.ToInt16(data, 54);
+                                if (imuYaw != short.MaxValue)
+                                {
+                                    ahrs.imuYawRate = imuYaw;
+                                }
+
                                 sentenceCounter = 0;
 
                                 if (isLogNMEA)
@@ -193,11 +222,11 @@ namespace AgOpenGPS
                                 rollK -= ahrs.rollZero;
                                 ahrs.imuRoll = ahrs.imuRoll * ahrs.rollFilter + rollK * (1 - ahrs.rollFilter);
                             }
+                            //else ahrs.imuRoll = 88888;
 
                             //switch status
-                            mc.steerSwitchValue = data[11];
-                            mc.workSwitchValue = mc.steerSwitchValue & 1;
-                            mc.steerSwitchValue = mc.steerSwitchValue & 2;
+                            mc.workSwitchHigh = (data[11] & 1) == 1;
+                            mc.steerSwitchHigh = (data[11] & 2) == 2;
 
                             //the pink steer dot reset
                             steerModuleConnectedCounter = 0;
@@ -213,6 +242,14 @@ namespace AgOpenGPS
                                     mc.actualSteerAngleDegrees.ToString("N1") + "\r\n"
                                     );
 
+                            break;
+                        }
+
+                    case 250:
+                        {                            
+                            if (data.Length != 14)
+                                break;
+                            mc.sensorData = data[5];
                             break;
                         }
 

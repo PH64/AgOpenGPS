@@ -126,7 +126,7 @@ namespace AgOpenGPS
         public bool isInAutoDrive = true;
 
         //isGPSData form up
-        public bool isGPSSentencesOn = false;
+        public bool isGPSSentencesOn = false, isKeepOffsetsOn = false;
 
         /// <summary>
         /// create the scene camera
@@ -219,11 +219,6 @@ namespace AgOpenGPS
         /// </summary>
         public CFieldData fd;
 
-        /// <summary>
-        /// Class containing workswitch functionality
-        /// </summary>
-        public CWorkSwitch workSwitch;
-
         ///// <summary>
         ///// Sound
         ///// </summary>
@@ -262,7 +257,7 @@ namespace AgOpenGPS
 
             //ControlExtension.Draggable(panelSnap, true);
             ControlExtension.Draggable(oglZoom, true);
-            //ControlExtension.Draggable(panelSim, true);
+            ControlExtension.Draggable(panelDrag, true);
 
             setWorkingDirectoryToolStripMenuItem.Text = gStr.gsDirectories;
             enterSimCoordsToolStripMenuItem.Text = gStr.gsEnterSimCoords;
@@ -330,7 +325,7 @@ namespace AgOpenGPS
             yt = new CYouTurn(this);
 
             //module communication
-            mc = new CModuleComm();
+            mc = new CModuleComm(this);
 
             //boundary object
             bnd = new CBoundary(this);
@@ -355,9 +350,6 @@ namespace AgOpenGPS
 
             //resource for gloabal language strings
             _rm = new ResourceManager("AgOpenGPS.gStr", Assembly.GetExecutingAssembly());
-
-            // Access to workswitch functionality
-            workSwitch = new CWorkSwitch(this);
 
             //access to font class
             font = new CFont(this);
@@ -485,6 +477,15 @@ namespace AgOpenGPS
             udpWatch.Start();
         }
 
+
+        // Generates a random number within a range.       
+        public double RandomNumber(double min, double max)
+        {
+            return min + _random.NextDouble() * (max - min);
+        }
+
+        private readonly Random _random = new Random();
+
         private void btnVideoHelpRecPath_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(gStr.v_RecordedPathForm))
@@ -536,8 +537,6 @@ namespace AgOpenGPS
                         FileSaveEverythingBeforeClosingField();
 
                         displayFieldName = gStr.gsNone;
-                        //shutdown and reset all module data
-                        mc.ResetAllModuleCommValues();
                     }
                 }
             }
@@ -767,6 +766,7 @@ namespace AgOpenGPS
             //machine pgn
             p_239.pgn[p_239.sc9to16] = p_254.pgn[p_254.sc9to16];
             p_239.pgn[p_239.sc1to8] = p_254.pgn[p_254.sc1to8];
+            p_239.pgn[p_239.speed] = unchecked((byte)(avgSpeed*10));
             p_239.pgn[p_239.tram] = unchecked((byte)tram.controlByte);
 
             //out serial to autosteer module  //indivdual classes load the distance and heading deltas 
@@ -1023,13 +1023,20 @@ namespace AgOpenGPS
         public void JobClose()
         {
             //reset field offsets
-            pn.fixOffset.easting = 0;
-            pn.fixOffset.northing = 0;
+            if (!isKeepOffsetsOn)
+            {
+                pn.fixOffset.easting = 0;
+                pn.fixOffset.northing = 0;
+            }
 
             //turn off headland
             bnd.isHeadlandOn = false;
             btnHeadlandOnOff.Image = Properties.Resources.HeadlandOff;
             btnHeadlandOnOff.Visible = false;
+
+            recPath.recList.Clear();
+            recPath.StopDrivingRecordedPath();
+            panelDrag.Visible = false;  
 
             //make sure hydraulic lift is off
             p_239.pgn[p_239.hydLift] = 0;
@@ -1171,9 +1178,6 @@ namespace AgOpenGPS
 
             //reset GUI areas
             fd.UpdateFieldBoundaryGUIAreas();
-
-            //reset all Port Module values
-            mc.ResetAllModuleCommValues();
 
             displayFieldName = gStr.gsNone;
             FixTramModeButton();

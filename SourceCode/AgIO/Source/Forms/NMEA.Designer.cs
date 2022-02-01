@@ -11,15 +11,23 @@ namespace AgIO
 
         private bool isNMEAToSend = false;
 
-        public string ggaSentence, vtgSentence, hdtSentence, avrSentence, paogiSentence, hpdSentence, rmcSentence;
+        public string ggaSentence, vtgSentence, hdtSentence, avrSentence, paogiSentence, 
+            hpdSentence, rmcSentence, pandaSentence;
 
         public float hdopData, altitude = float.MaxValue, headingTrue = float.MaxValue,
-            headingTrueDual = float.MaxValue, speed = float.MaxValue, roll = float.MaxValue,
-            altitudeData, speedData, rollData, headingTrueData, headingTrueDualData, ageData;
+            headingTrueDual = float.MaxValue, speed = float.MaxValue, roll = float.MaxValue;
+        public float altitudeData, speedData, rollData, headingTrueData, headingTrueDualData, ageData;
 
         public double latitudeSend = double.MaxValue, longitudeSend = double.MaxValue, latitude, longitude;
 
-        public ushort satellitesData, satellitesTracked = ushort.MaxValue, hdopX100 = ushort.MaxValue, ageX100 = ushort.MaxValue;
+        public ushort satellitesData, satellitesTracked = ushort.MaxValue, hdopX100 = ushort.MaxValue, 
+            ageX100 = ushort.MaxValue;
+
+        //imu data
+        public ushort imuHeadingData, imuHeading = ushort.MaxValue;
+        public short imuRollData, imuRoll = short.MaxValue, imuPitchData, imuPitch = short.MaxValue, 
+            imuYawRateData, imuYawRate = short.MaxValue;
+
         public byte fixQualityData, fixQuality = byte.MaxValue;
 
         private float rollK, Pc, G, Xp, Zp, XeRoll, P = 1.0f;
@@ -33,7 +41,7 @@ namespace AgIO
             get
             {
                 if (fixQualityData == 0) return "Invalid: ";
-                else if (fixQualityData == 1) return "GPS single: ";
+                else if (fixQualityData == 1) return "GPS 1: ";
                 else if (fixQualityData == 2) return "DGPS : ";
                 else if (fixQualityData == 3) return "PPS : ";
                 else if (fixQualityData == 4) return "RTK fix: ";
@@ -122,14 +130,22 @@ namespace AgIO
                 nextNMEASentence = Parse(ref buffer);
                 if (nextNMEASentence == null) break;
 
+                words = nextNMEASentence.Split(',');
+
                 if (isLogNMEA)
                 {
-                    logNMEASentence.Append(
-                        DateTime.UtcNow.ToString("mm:ss.fff ", CultureInfo.InvariantCulture) + nextNMEASentence + "\r\n");
+                    string timNow = DateTime.UtcNow.ToString("HHmmss.fff ", CultureInfo.InvariantCulture);
+                    logNMEASentence.Append(timNow + " " + nextNMEASentence + "\r\n");
+
+                    //double timD = Convert.ToDouble(timNow);
+                    //double timS = Convert.ToDouble(words[1]);
+
+                    //logNMEASentence.Append((timD-timS).ToString("N3", CultureInfo.InvariantCulture) + " ")
+                    //    .Append(timNow + " " + nextNMEASentence + "\r\n");
+
                 }
 
                 //parse them accordingly
-                words = nextNMEASentence.Split(',');
                 if (words.Length < 3) break;
 
                 if ((words[0] == "$GPGGA" || words[0] == "$GNGGA") && words.Length > 13)
@@ -162,6 +178,12 @@ namespace AgIO
                     if (isGPSSentencesOn) paogiSentence = nextNMEASentence;
                 }
 
+                else if (words[0] == "$PANDA" && words.Length > 14)
+                {
+                    ParsePANDA();
+                    if (isGPSSentencesOn) pandaSentence = nextNMEASentence;
+                }
+
                 else if (words[0] == "$GPHDT" || words[0] == "$GNHDT")
                 {
                     ParseHDT();
@@ -189,13 +211,13 @@ namespace AgIO
             {
                 isNMEAToSend = false;
 
-                byte[] nmeaPGN = new byte[49];
+                byte[] nmeaPGN = new byte[57];
 
                 nmeaPGN[0] = 0x80;
                 nmeaPGN[1] = 0x81;
                 nmeaPGN[2] = 0x7C;
                 nmeaPGN[3] = 0xD6;
-                nmeaPGN[4] = 0x2B;
+                nmeaPGN[4] = 0x33; // nmea total array count minus 6
 
                 //longitude
                 Buffer.BlockCopy(BitConverter.GetBytes(longitudeSend), 0, nmeaPGN, 5, 8);
@@ -237,6 +259,18 @@ namespace AgIO
                 Buffer.BlockCopy(BitConverter.GetBytes(ageX100), 0, nmeaPGN, 46, 2);
                 ageX100 = ushort.MaxValue;
 
+                Buffer.BlockCopy(BitConverter.GetBytes(imuHeading), 0, nmeaPGN, 48, 2);
+                imuHeading = ushort.MaxValue;
+
+                Buffer.BlockCopy(BitConverter.GetBytes(imuRoll), 0, nmeaPGN, 50, 2);
+                imuRoll = short.MaxValue;
+
+                Buffer.BlockCopy(BitConverter.GetBytes(imuPitch), 0, nmeaPGN, 52, 2);
+                imuPitch = short.MaxValue;
+
+                Buffer.BlockCopy(BitConverter.GetBytes(imuYawRate), 0, nmeaPGN, 54, 2);
+                imuYawRate = short.MaxValue;
+
 
                 int CK_A = 0;
                 for (int j = 2; j < nmeaPGN.Length; j++)
@@ -245,7 +279,7 @@ namespace AgIO
                 }
 
                 //checksum
-                nmeaPGN[48] = (byte)CK_A;
+                nmeaPGN[56] = (byte)CK_A;
 
                 //Send nmea to AgOpenGPS
                 SendToLoopBackMessageAOG(nmeaPGN);
@@ -344,7 +378,7 @@ namespace AgIO
                 { if (words[5] == "W") longitude *= -1; }
                 longitudeSend = longitude;
 
-                isNMEAToSend = true;
+                if (lastSentence == "GGA") isNMEAToSend = true;
                 //}
             }
         }
@@ -380,6 +414,8 @@ namespace AgIO
                 float.TryParse(words[1], NumberStyles.Float, CultureInfo.InvariantCulture, out headingTrue);
                 headingTrueData = headingTrue;
             }
+
+            if (lastSentence == "VTG") isNMEAToSend = true;
         }
 
         private void ParseAVR()
@@ -421,6 +457,8 @@ namespace AgIO
                 rollData = XeRoll;
 
                 roll = (float)(XeRoll);
+
+                if (lastSentence == "AVR") isNMEAToSend = true;
             }
         }
 
@@ -448,6 +486,8 @@ namespace AgIO
                     roll = float.MinValue;
                     rollData = 0;
                 }
+
+                if (lastSentence == "HPD") isNMEAToSend = true;
             }
         }
 
@@ -563,6 +603,130 @@ namespace AgIO
                 { if (words[5] == "W") longitude *= -1; }
                 longitudeSend = longitude;
 
+                //always send because its probably the only one.
+                isNMEAToSend = true;
+                //}
+            }
+        }
+
+        private void ParsePANDA()
+        {
+            #region PANDA Message
+            /*
+            $PANDA
+            (1) Time of fix
+
+            position
+            (2,3) 4807.038,N Latitude 48 deg 07.038' N
+            (4,5) 01131.000,E Longitude 11 deg 31.000' E
+
+            (6) 1 Fix quality: 
+                0 = invalid
+                1 = GPS fix(SPS)
+                2 = DGPS fix
+                3 = PPS fix
+                4 = Real Time Kinematic
+                5 = Float RTK
+                6 = estimated(dead reckoning)(2.3 feature)
+                7 = Manual input mode
+                8 = Simulation mode
+            (7) Number of satellites being tracked
+            (8) 0.9 Horizontal dilution of position
+            (9) 545.4 Altitude (ALWAYS in Meters, above mean sea level)
+            (10) 1.2 time in seconds since last DGPS update
+            (11) Speed in knots
+
+            FROM IMU:
+            (12) Heading in degrees
+            (13) Roll angle in degrees(positive roll = right leaning - right down, left up)
+            
+            (14) Pitch angle in degrees(Positive pitch = nose up)
+            (15) Yaw Rate in Degrees / second
+
+            * CHKSUM
+            */
+            #endregion PANDA Message
+
+            if (!string.IsNullOrEmpty(words[1]) && !string.IsNullOrEmpty(words[2]) && !string.IsNullOrEmpty(words[3])
+                && !string.IsNullOrEmpty(words[3]) && !string.IsNullOrEmpty(words[0]))
+            {
+
+                //get latitude and convert to decimal degrees
+                int decim = words[2].IndexOf(".", StringComparison.Ordinal);
+                if (decim == -1)
+                {
+                    words[2] += ".00";
+                    decim = words[2].IndexOf(".", StringComparison.Ordinal);
+                }
+
+                decim -= 2;
+                double.TryParse(words[2].Substring(0, decim), NumberStyles.Float, CultureInfo.InvariantCulture, out latitude);
+                double.TryParse(words[2].Substring(decim), NumberStyles.Float, CultureInfo.InvariantCulture, out double temp);
+                temp *= 0.01666666666666666666666666666667;
+                latitude += temp;
+                if (words[3] == "S")
+                    latitude *= -1;
+
+                latitudeSend = latitude;
+
+                //get longitude and convert to decimal degrees
+                decim = words[4].IndexOf(".", StringComparison.Ordinal);
+                if (decim == -1)
+                {
+                    words[4] += ".00";
+                    decim = words[4].IndexOf(".", StringComparison.Ordinal);
+                }
+
+                decim -= 2;
+                double.TryParse(words[4].Substring(0, decim), NumberStyles.Float, CultureInfo.InvariantCulture, out longitude);
+                double.TryParse(words[4].Substring(decim), NumberStyles.Float, CultureInfo.InvariantCulture, out temp);
+                longitude += temp * 0.01666666666666666666666666666667;
+
+                { if (words[5] == "W") longitude *= -1; }
+                longitudeSend = longitude;
+
+                //FixQuality
+                byte.TryParse(words[6], NumberStyles.Float, CultureInfo.InvariantCulture, out fixQuality);
+                fixQualityData = fixQuality;
+
+                //satellites tracked
+                ushort.TryParse(words[7], NumberStyles.Float, CultureInfo.InvariantCulture, out satellitesTracked);
+                satellitesData = satellitesTracked;
+
+                //hdop
+                float.TryParse(words[8], NumberStyles.Float, CultureInfo.InvariantCulture, out hdopData);
+                hdopX100 = (ushort)(hdopData * 100.0);
+
+                //altitude
+                float.TryParse(words[9], NumberStyles.Float, CultureInfo.InvariantCulture, out altitude);
+                altitudeData = altitude;
+
+                //age
+                float.TryParse(words[10], NumberStyles.Float, CultureInfo.InvariantCulture, out ageData);
+                ageX100 = (ushort)(ageData * 100.0);
+
+                //kph for speed - knots read
+                float.TryParse(words[11], NumberStyles.Float, CultureInfo.InvariantCulture, out speed);
+                speed *= 1.852f;
+                speedData = speed;
+
+                //imu heading
+                ushort.TryParse(words[12], NumberStyles.Float, CultureInfo.InvariantCulture, out imuHeading);
+                imuHeadingData = imuHeading;
+
+                //roll
+                short.TryParse(words[13], NumberStyles.Float, CultureInfo.InvariantCulture, out imuRoll);
+                imuRollData = imuRoll;
+
+                //Pitch
+                short.TryParse(words[14], NumberStyles.Float, CultureInfo.InvariantCulture, out imuPitch);
+                imuPitchData = imuPitch;
+
+                //YawRate
+                short.TryParse(words[15], NumberStyles.Float, CultureInfo.InvariantCulture, out imuYawRate);
+                imuYawRateData = imuYawRate;
+
+                //always send because its probably the only one.
                 isNMEAToSend = true;
                 //}
             }
@@ -584,6 +748,8 @@ namespace AgIO
                 //True heading
                 float.TryParse(words[1], NumberStyles.Float, CultureInfo.InvariantCulture, out headingTrueDual);
                 headingTrueDualData = headingTrueDual;
+
+                if (lastSentence == "HDT") isNMEAToSend = true;
             }
         }
 
@@ -633,6 +799,8 @@ namespace AgIO
                 rollData = XeRoll;
 
                 roll = (float)(XeRoll);
+
+                if (lastSentence == "STI") isNMEAToSend = true;
             }
         }
 
@@ -651,6 +819,8 @@ namespace AgIO
                 if (trasolution != 4) rollK = 0;
                 rollData = rollK;
                 roll = (float)(rollK);
+
+                if (lastSentence == "TRA") isNMEAToSend = true;
 
             }
         }

@@ -29,6 +29,8 @@ namespace AgIO
 
         public double secondsSinceStart, lastSecond;
 
+        public string lastSentence;
+
         //The base directory where Drive will be stored and fields and vehicles branch from
         public string baseDirectory;
 
@@ -63,6 +65,16 @@ namespace AgIO
             {
                 OpenGPSPort();
                 if (spGPS.IsOpen) lblGPS1Comm.Text = portNameGPS;
+            }
+
+            // set baud and port for rtcm from last time run
+            baudRateRtcm = Settings.Default.setPort_baudRateRtcm;
+            portNameRtcm = Settings.Default.setPort_portNameRtcm;
+            wasRtcmConnectedLastRun = Settings.Default.setPort_wasRtcmConnected;
+            
+            if (wasRtcmConnectedLastRun)
+            {
+                OpenRtcmPort();
             }
 
             //Open IMU
@@ -118,6 +130,8 @@ namespace AgIO
                     listBox1.Items.Add(ports[i]);
                 }
             }
+
+            lastSentence = Properties.Settings.Default.setGPS_lastSentence;
 
             timer1.Enabled = true;
             panel1.Visible = false;

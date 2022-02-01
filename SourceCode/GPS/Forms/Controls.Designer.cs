@@ -4,6 +4,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using AgOpenGPS.Forms;
+using AgOpenGPS.Forms.Pickers;
 using AgOpenGPS.Properties;
 using Microsoft.Win32;
 
@@ -1749,6 +1751,22 @@ namespace AgOpenGPS
                 form.ShowDialog(this);
             }
         }
+        private void correctionToolStrip_Click(object sender, EventArgs e)
+        {
+            //check if window already exists
+            Form fcc = Application.OpenForms["FormCorrection"];
+
+            if (fcc != null)
+            {
+                fcc.Focus();
+                return;
+            }
+
+            //
+            Form formC = new FormCorrection(this);
+            formC.Show(this);
+        }
+
 
         #endregion
 
@@ -2002,14 +2020,14 @@ namespace AgOpenGPS
 
             if (ABLine.numABLineSelected > 0 && ABLine.isBtnABLineOn)
             {
-                Form form99 = new FormTram(this);
+                Form form99 = new FormTram(this, false);
                 form99.Show(this);
                 form99.Left = Width - 275;
                 form99.Top = 100;
             }
             else if (curve.numCurveLineSelected > 0 && curve.isBtnCurveOn)
             {
-                Form form97 = new FormTramCurve(this);
+                Form form97 = new FormTram(this, true);
                 form97.Show(this);
                 form97.Left = Width - 275;
                 form97.Top = 100;
@@ -2147,11 +2165,25 @@ namespace AgOpenGPS
         {
             if (recPath.isRecordOn)
             {
-                FileSaveRecPath();
                 recPath.isRecordOn = false;
                 btnPathRecordStop.Image = Properties.Resources.BoundaryRecord;
                 btnPathGoStop.Enabled = true;
                 btnPathDelete.Enabled = true;
+
+                using (var form = new FormRecordName(this))
+                {
+                    form.ShowDialog(this);
+                    if(form.DialogResult == DialogResult.OK) 
+                    {
+                        String filename = form.filename + ".rec";
+                        FileSaveRecPath();
+                        FileSaveRecPath(filename);
+                    }
+                    else
+                    {
+                        recPath.recList.Clear();
+                    }
+                }                
             }
             else if (isJobStarted)
             {
@@ -2162,12 +2194,34 @@ namespace AgOpenGPS
                 btnPathDelete.Enabled = false;
             }
         }
-
-        private void btnPathDelete_Click(object sender, EventArgs e)
+        private void btnDeleteCurrentPath_Click(object sender, EventArgs e)
         {
             recPath.recList.Clear();
             recPath.StopDrivingRecordedPath();
             FileSaveRecPath();
+        }
+
+
+        private void btnPathFilePicker_Click(object sender, EventArgs e)
+        {
+            using (FormRecordPicker form = new FormRecordPicker(this))
+            {
+                ////returns full field.txt file dir name
+                if (form.ShowDialog(this) == DialogResult.Yes)
+                {
+                //    //this.FileOpenField(this.filePickerFileAndDirectory);
+
+
+                //}
+                //else
+                //{
+                //    return;
+                }
+            }
+
+            //recPath.recList.Clear();
+            //recPath.StopDrivingRecordedPath();
+            //FileSaveRecPath();
         }
 
         private void recordedPathStripMenu_Click(object sender, EventArgs e)
@@ -2177,9 +2231,14 @@ namespace AgOpenGPS
                 if (panelDrag.Visible)
                 {
                     panelDrag.Visible = false;
+                    recPath.recList.Clear();
+                    recPath.StopDrivingRecordedPath();
+                    //FileSaveRecPath();
+
                 }
                 else
                 {
+                    FileLoadRecPath();  
                     panelDrag.Visible = true;
                 }
             }

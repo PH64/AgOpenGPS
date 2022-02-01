@@ -326,7 +326,7 @@ namespace AgOpenGPS
 
             //build new current ref line if required
             if (!isCurveValid || ((mf.secondsSinceStart - lastSecond) > 0.66 
-                && (!mf.isAutoSteerBtnOn || mf.mc.steerSwitchValue != 0)))
+                && (!mf.isAutoSteerBtnOn || mf.mc.steerSwitchHigh)))
                 BuildCurveCurrentList(pivot);
 
             double dist, dx, dz;
@@ -571,6 +571,8 @@ namespace AgOpenGPS
             //just draw ref and smoothed line if smoothing window is open
             if (isSmoothWindowOpen)
             {
+                if (smooList == null) return;
+
                 ptCount = smooList.Count;
                 if (smooList.Count == 0) return;
 
@@ -629,52 +631,6 @@ namespace AgOpenGPS
                 }
             }
             GL.PointSize(1.0f);
-
-
-            //if (isEditing)
-            //{
-            //    int ptCount = refList.Count;
-            //    if (refList.Count == 0) return;
-
-            //    GL.LineWidth(mf.ABLine.lineWidth);
-            //    GL.Color3(0.930f, 0.2f, 0.260f);
-            //    GL.Begin(PrimitiveType.Lines);
-            //    for (int h = 0; h < ptCount; h++) GL.Vertex3(refList[h].easting, refList[h].northing, 0);
-            //    GL.End();
-
-            //    //current line
-            //    if (curList.Count > 0 && isCurveSet)
-            //    {
-            //        ptCount = curList.Count;
-            //        GL.Color3(0.95f, 0.2f, 0.950f);
-            //        GL.Begin(PrimitiveType.LineStrip);
-            //        for (int h = 0; h < ptCount; h++) GL.Vertex3(curList[h].easting, curList[h].northing, 0);
-            //        GL.End();
-            //    }
-
-
-            //if (mf.camera.camSetDistance > -200)
-            //{
-            //    double toolWidth2 = mf.tool.toolWidth - mf.tool.toolOverlap;
-            //    double cosHeading2 = Math.Cos(-mf.curve.aveLineHeading);
-            //    double sinHeading2 = Math.Sin(-mf.curve.aveLineHeading);
-
-            //    GL.Color3(0.8f, 0.3f, 0.2f);
-            //    GL.PointSize(2);
-            //    GL.Begin(PrimitiveType.Points);
-
-            //    ptCount = refList.Count;
-            //    for (int i = 1; i <= 6; i++)
-            //    {
-            //        for (int h = 0; h < ptCount; h++)
-            //            GL.Vertex3((cosHeading2 * toolWidth2) + mf.curve.refList[h].easting,
-            //                          (sinHeading2 * toolWidth2) + mf.curve.refList[h].northing, 0);
-            //        toolWidth2 = toolWidth2 + mf.tool.toolWidth - mf.tool.toolOverlap;
-            //    }
-
-            //    GL.End();
-            //}
-            //}
         }
 
         public void BuildTram()
@@ -796,7 +752,7 @@ namespace AgOpenGPS
             int cnt = refList.Count;
 
             //just go back if not very long
-            if (!isCurveSet || cnt < 400) return;
+            if (!isCurveSet || cnt < 200) return;
 
             //the temp array
             vec3[] arr = new vec3[cnt];
@@ -831,6 +787,10 @@ namespace AgOpenGPS
 
             //make a list to draw
             smooList?.Clear();
+
+            if (arr == null || cnt < 1) return;
+            if (smooList == null) return;   
+
             for (int i = 0; i < cnt; i++)
             {
                 smooList.Add(arr[i]);
@@ -863,6 +823,7 @@ namespace AgOpenGPS
         public void SaveSmoothAsRefList()
         {
             //oops no smooth list generated
+            if (smooList == null) return;
             int cnt = smooList.Count;
             if (cnt == 0) return;
 
