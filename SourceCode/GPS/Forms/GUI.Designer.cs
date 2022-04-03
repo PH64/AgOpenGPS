@@ -114,7 +114,7 @@ namespace AgOpenGPS
                 displayUpdateThreeSecondCounter = threeSeconds;
 
                 //check to make sure the grid is big enough
-                worldGrid.checkZoomWorldGrid(pn.fix.northing, pn.fix.easting);
+                //worldGrid.checkZoomWorldGrid(pn.fix.northing, pn.fix.easting);
 
                 if (panelNavigation.Visible)
                     lblHz.Text = fixUpdateHz + " ~ " + (frameTime.ToString("N1")) + " " + FixQuality;
@@ -239,6 +239,8 @@ namespace AgOpenGPS
 
                     else if (ct.isContourBtnOn) lblInty.Text = ct.inty.ToString("N3");
                 }
+
+                if (recPath.isDrivingRecordedPath) lblInty.Text = recPath.inty.ToString("N3");
 
                 if (ABLine.isBtnABLineOn && !ct.isContourBtnOn)
                 {
@@ -408,7 +410,6 @@ namespace AgOpenGPS
                 inOrCm2Cm = 2.54;
                 cm2CmOrIn = 0.3937;
 
-
                 unitsInCm = " in";
                 unitsFtM = " ft";
             }
@@ -416,6 +417,7 @@ namespace AgOpenGPS
             //timeToShowMenus = Properties.Settings.Default.setDisplay_showMenusTime;
 
             udpWatchLimit = Properties.Settings.Default.SetGPS_udpWatchMsec;
+            pn.headingTrueDualOffset = Properties.Settings.Default.setGPS_dualHeadingOffset;
 
             startSpeed = Vehicle.Default.setVehicle_startSpeed;
 

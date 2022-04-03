@@ -16,8 +16,6 @@ namespace AgOpenGPS.Forms.Pickers
     {
         private readonly FormGPS mf = null;
 
-        private int order;
-
         private readonly List<string> fileList = new List<string>();
 
         public FormRecordPicker(Form callingForm)
@@ -145,6 +143,15 @@ namespace AgOpenGPS.Forms.Pickers
             else return;
 
             LoadList();
+        }
+
+        private void btnTurnOffRecPath_Click(object sender, EventArgs e)
+        {
+            mf.recPath.StopDrivingRecordedPath();
+            mf.recPath.recList.Clear();
+            mf.FileSaveRecPath();
+            mf.panelDrag.Visible = false;
+            Close();
         }
     }
 }

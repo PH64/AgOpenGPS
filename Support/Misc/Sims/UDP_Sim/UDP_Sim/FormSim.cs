@@ -23,6 +23,7 @@ namespace UDP_Sim
         private readonly StringBuilder sbGGA = new StringBuilder();
         private readonly StringBuilder sbVTG = new StringBuilder();
         private readonly StringBuilder sbAVR = new StringBuilder();
+        private readonly StringBuilder sbKSXT = new StringBuilder();
 
         //The entire string to send out
         private readonly StringBuilder sbSendText = new StringBuilder();
@@ -92,6 +93,43 @@ namespace UDP_Sim
             cboxOGI.Checked = Properties.Settings.Default.isOGI;
             cboxIMU.Checked = Properties.Settings.Default.isIMU;
             cboxNDA.Checked = Properties.Settings.Default.isNDA;
+            cboxKSXT.Checked = Properties.Settings.Default.isKSXT;
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            isUDPNetworkConnected = false;
+            if (UDPSocket != null)
+            {
+                try
+                {
+                    UDPSocket.Shutdown(SocketShutdown.Both);
+                }
+                finally { UDPSocket.Close(); }
+            }
+
+            //save settings before exit
+            Properties.Settings.Default.isGGA = cboxGGA.Checked;
+            Properties.Settings.Default.isVTG = cboxVTG.Checked;
+            Properties.Settings.Default.isAVR = cboxAVR.Checked;
+            Properties.Settings.Default.isHDT = cboxHDT.Checked;
+            Properties.Settings.Default.isRMC = cboxRMC.Checked;
+            Properties.Settings.Default.isOGI = cboxOGI.Checked;
+            Properties.Settings.Default.isIMU = cboxIMU.Checked;
+            Properties.Settings.Default.isNDA = cboxNDA.Checked;
+            Properties.Settings.Default.isKSXT = cboxKSXT.Checked;
+
+            Properties.Settings.Default.IPAddress = textBox2.Text;
+
+            Properties.Settings.Default.GPS_Latitude = double.Parse(lblLat.Text);
+            Properties.Settings.Default.GPS_Longitude = double.Parse(lblLon.Text);
+
+            Properties.Settings.Default.Port = (int)nudPort.Value;
+
+            Properties.Settings.Default.Hz = (byte)nudHz.Value;
+
+
+            Properties.Settings.Default.Save();
         }
 
         private void trackBar3_ValueChanged(object sender, EventArgs e)
@@ -142,41 +180,6 @@ namespace UDP_Sim
         {
             steerAngleWAS = tbarWAS.Value;
             lblWAS.Text = "Steer Angle: " + (steerAngleWAS * 0.1).ToString("N1") + "°";
-        }
-
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            isUDPNetworkConnected = false;
-            if (UDPSocket != null)
-            {
-                try
-                {
-                    UDPSocket.Shutdown(SocketShutdown.Both);
-                }
-                finally { UDPSocket.Close(); }
-            }
-
-            //save settings before exit
-            Properties.Settings.Default.isGGA = cboxGGA.Checked;
-            Properties.Settings.Default.isVTG = cboxVTG.Checked;
-            Properties.Settings.Default.isAVR = cboxAVR.Checked;
-            Properties.Settings.Default.isHDT = cboxHDT.Checked;
-            Properties.Settings.Default.isRMC = cboxRMC.Checked;
-            Properties.Settings.Default.isOGI = cboxOGI.Checked;
-            Properties.Settings.Default.isIMU = cboxIMU.Checked;
-            Properties.Settings.Default.isNDA = cboxNDA.Checked;
-
-            Properties.Settings.Default.IPAddress = textBox2.Text;
-
-            Properties.Settings.Default.GPS_Latitude = double.Parse(lblLat.Text);
-            Properties.Settings.Default.GPS_Longitude = double.Parse(lblLon.Text);
-
-            Properties.Settings.Default.Port = (int)nudPort.Value;
-
-            Properties.Settings.Default.Hz = (byte)nudHz.Value;
-
-
-            Properties.Settings.Default.Save();
         }
 
         private void button4_Click(object sender, EventArgs e)
@@ -449,6 +452,13 @@ namespace UDP_Sim
                 SendUDPMessage(sbNDA.ToString());
             }
 
+            if (cboxKSXT.Checked)
+            {
+                BuildKSXT();
+                sbSendText.Append(sbKSXT.ToString());
+                SendUDPMessage(sbKSXT.ToString());
+            }
+
             textBox1.Text = sbSendText.ToString();
             sbSendText.Clear();
 
@@ -709,6 +719,94 @@ namespace UDP_Sim
             sbNDA.Append(sumStr);
             sbNDA.Append("\r\n");
         }
+
+        private void BuildKSXT()
+        {
+            sbKSXT.Clear();
+            sbKSXT.Append("$KSXT,"); //0
+
+            sbKSXT.Append(TimeNow); //1
+            sbKSXT.Append(longitude.ToString("N7", CultureInfo.InvariantCulture)).Append(',');//2
+            sbKSXT.Append(latitude.ToString("N7", CultureInfo.InvariantCulture)).Append(','); //3
+
+            sbKSXT.Append(altitude.ToString(CultureInfo.InvariantCulture)).Append(',') //4 altitude
+                .Append(degrees.ToString("N5", CultureInfo.InvariantCulture)).Append(',') //5 true heading
+                .Append(roll.ToString(CultureInfo.InvariantCulture))//6 Roll
+                .Append(",22,") // 7 Pitch
+                .Append(speed.ToString(CultureInfo.InvariantCulture)).Append(',')// 8 Speed in kmh
+                .Append(",35,3,3,13,-1075,-98,-8,,,,37,13,,")// 9 to ... SpeedAngle to end
+                .Append("*3FCF0C9B");
+
+            //sbKSXT.Append(sumStr);
+            sbKSXT.Append("\r\n");
+        }
+
+        /*
+                0 $KSXT  Log header
+
+                1 20191219093115.00 YYYYMMDDhhmmss.ss Satellite time in format of yyyymmddhhmmss.ss,
+                                    e.g. 2016040106284180 means
+                                    2016(year)4(month)1(day)06(hour)28(mins)41.80(secs)
+
+                2 112.87713062  Longitude(°)
+
+                3 28.23315515  Latitude(°)
+
+                4 65.5618  Height (m) Elevation
+
+                5 0.00  Yaw, the angle between the line connecting two
+                antennas and True North (primary antenna
+                positioning and secondary antenna heading) (0°
+                360°)
+
+                6 0.00  Pitch (-90° 90°) IS ACTUALLY ROLL USED
+
+                7 336.65 Speed angle, the angle between vehicle traveling
+                direction and True North (0° 360°)
+
+                8 0.010  Speed in vehicle traveling direction (km/h)
+
+                9 0.00  Roll (-90° 90°) IS ACTUALLY PITCH
+
+                10 3  Positioning status: 0-invalid solution; 1-single point solution; 
+                                            2-RTK floating point; 3-RTK fixed point
+
+                11 0  Heading status: 0-invalid solution; 1-single point solution; 
+                                        2-RTK floating point; 3-RTK fixed point
+
+                12 0    Number of satellites used in heading
+
+                13 23   Number of satellites used in positioning (primary antenna)
+
+                14 -1075.146  East position under geographic coordinates with
+                                the base station as the origin (m) (empty if none)
+
+                15 -98.462  North position under geographic coordinates with
+                the base station as the origin (m) (empty if none)
+
+                16 -8.618  Up position under geographic coordinates with
+                the base station as the origin (m) (empty if none)
+
+                17 -0.004  East speed under geographic coordinates (km/h)
+                (empty if none)
+
+                18 0.009 North speed under geographic coordinates (km/h)
+                (empty if none)
+
+                19 0.004  Up speed under geographic coordinates (km/h)
+                (empty if none)
+
+                20 1.0  Age of differential
+
+                21 30  Number of satellites tracked in base station
+
+                22  Reserved
+
+                23 Parity 3FCF0C9B XOR check sum (Hex string, check from the
+                beginning of the frame)
+
+
+                        */
 
         private void BuildRMC()
         {
